@@ -23,7 +23,7 @@
 #include <libgimp/gimpui.h>
 
 //THREADS
-#include <pthread.h> /* Posix 1003.1c threads */
+//#include <pthread.h> /* Posix 1003.1c threads */
 
 #define PLUG_IN_PROC    "plug-in-depthmap"
 #define PLUG_IN_BINARY  "elsamuko-depthmap"
