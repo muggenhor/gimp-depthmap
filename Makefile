@@ -1,34 +1,22 @@
-CC=gcc.exe
-CFLAGS =-mwindows -O3 -Wall $(shell gimptool-2.0 --cflags)
-LIBS = $(shell gimptool-2.0 --libs)
-PLUGIN = elsamuko-depthmap
-SOURCES = elsamuko-depthmap.c
 
-# END CONFIG ##################################################################
+CXX=gcc
+GIMPTOOL=gimptool-2.0
+GIMP_FLAGS=`$(GIMPTOOL) --cflags`
+GIMP_LIBS=`$(GIMPTOOL) --libs`
+CV_FLAGS=`pkg-config --cflags opencv`
+CV_LIBS=`pkg-config --libs opencv`
+FLAGS=-O3
 
-.PHONY: all install userinstall clean uninstall useruninstall
+RM=rm -f
 
-all: $(PLUGIN)
+all: elsamuko-depthmap-cv
 
-OBJECTS = $(subst .c,.o,$(SOURCES))
+elsamuko-depthmap-cv: elsamuko-depthmap-cv.o
+	$(CXX) $(CV_FLAGS) $(FLAGS) $(GIMP_FLAGS) elsamuko-depthmap-cv.o -o elsamuko-depthmap-cv -B static $(CV_LIBS) -B dynamic $(GIMP_LIBS)
+	$(GIMPTOOL) --install-bin elsamuko-depthmap-cv
 
-$(PLUGIN): $(OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
-
-%.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c -o $@ $*.c
-	
-install: $(PLUGIN)
-	@gimptool-2.0 --install-admin-bin $^
-
-userinstall: $(PLUGIN)
-	@gimptool-2.0 --install-bin $^
-
-uninstall:
-	@gimptool-2.0 --uninstall-admin-bin $(PLUGIN)
-
-useruninstall:
-	@gimptool-2.0 --uninstall-bin $(PLUGIN)
+elsamuko-depthmap-cv.o: elsamuko-depthmap-cv.c
+	$(CXX) $(CV_FLAGS) $(FLAGS) $(GIMP_FLAGS) -c elsamuko-depthmap-cv.c -Wl,-static $(CV_LIBS) -Wl,-dynamic $(GIMP_LIBS)
 
 clean:
-	rm -f *.o $(PLUGIN)
+	$(RM) elsamuko-depthmap-cv.o elsamuko-depthmap-cv *~
