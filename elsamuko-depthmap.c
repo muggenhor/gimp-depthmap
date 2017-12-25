@@ -24,11 +24,6 @@
 #include <highgui.h>
 #include <opencv2/legacy/legacy.hpp>
 
-// #include <sys/types.h>
-// #include <sys/stat.h>
-// #include <sys/dir.h>
-// #include <sys/param.h>
-
 #include <libgimp/gimp.h>
 #include <libgimp/gimpui.h>
 
@@ -41,22 +36,12 @@
 #define SCALE_WIDTH   120
 #define ENTRY_WIDTH     5
 
-/* Uncomment this line to get a rough estimate of how long the plug-in
- * takes to run.
- */
-
-/*  #define TIMER  */
-
 typedef struct {
     gint    iters;
     gint    parallax;
     gint    side;
     gint    change;
 } DepthmapParams;
-
-typedef struct {
-    gboolean  run;
-} DepthmapInterface;
 
 /* local function prototypes */
 static inline gint coord( gint i, gint j, gint k, gint channels, gint width ) {
@@ -78,9 +63,6 @@ static void calcDepthmap (IplImage* cvImgLeft,
                           int parallax,
                           int side,
                           int change);
-
-static gint write_matrix(CvMat* cvMatDepth,
-                         char *filename);
 
 static void depthmap_region (GimpPixelRgn *dstPTR,
                              gint iters,
@@ -161,9 +143,6 @@ run (const gchar      *name,
     static GimpParam   values[1];
     GimpPDBStatusType  status = GIMP_PDB_SUCCESS;
     GimpDrawable      *drawable;
-#ifdef TIMER
-    GTimer            *timer = g_timer_new ();
-#endif
 
     const GimpRunMode run_mode = param[0].data.d_int32;
 
@@ -241,11 +220,6 @@ run (const gchar      *name,
         gimp_drawable_detach(drawable);
         values[0].data.d_status = status;
     }
-
-#ifdef TIMER
-    g_printerr ("%f seconds\n", g_timer_elapsed (timer, NULL));
-    g_timer_destroy (timer);
-#endif
 }
 
 static void
@@ -402,15 +376,6 @@ depthmap_region (GimpPixelRgn *prDepth,
                  iters, parallax, side, change);
     if (show_progress) gimp_progress_update (0.8);
                  
-//     // write out the OpenCV matrix as Octave matrix
-//     char* home = getenv("HOME");
-//     char dir[PATH_MAX + 1];
-//     char file[PATH_MAX + 1];
-//     sprintf (dir, "%s/%s", home, "depthmap");
-//     sprintf (file, "%s/%s/%s", home, "depthmap", "depthmap");
-//     mkdir( dir, S_IRWXU );
-//     write_matrix(cvMatDepth, file);
-
     // B/W
     if (channels == 2) {
         printf( "L%i: B/W: Set depth values\n", __LINE__);        
@@ -486,41 +451,6 @@ calcDepthmap(IplImage* cvImgLeft,
     cvReleaseMat(&disparityRight);
     cvReleaseMat(&disparityLeft);
 }
-
-// debug function to write out the OpenCV matrix as Octave matrix
-static gint
-write_matrix(CvMat*  cvMatDepth,
-             char   *filename)
-{
-    FILE* const file = fopen( filename, "w" );
-    if ( file != NULL )
-    {
-        gimp_message("Error: Could not open input matrix.");
-        printf( "L%i: Error: Could not open input matrix.\n", __LINE__);
-        return TRUE; // error
-    }
-
-    const gint height = cvMatDepth->rows;
-    const gint width  = cvMatDepth->cols;
-
-    // # Created by elsamuko-depthmap
-    // # name: depthmap
-    // # type: matrix
-    // # ndims: 3
-    fputs ("# Created by elsamuko-depthmap\n", file);
-    fputs ("# name:  depthmap\n", file);
-    fputs ("# type:  matrix\n", file);
-    fprintf ( file, "# ndims: %i\n", 3);
-    fprintf ( file, "%i %i %i\n", height, width, 1);
-    for ( gint j = 0; j < width; j++ ) {
-        for ( gint i = 0; i < height; i++ ) {
-            fprintf ( file, "%i\n", (int)((uchar*)(cvMatDepth->data.ptr + cvMatDepth->step*i))[j]);
-        }
-    }
-    fclose (file);
-
-    return FALSE; //no error
-};
 
 static gboolean
 depthmap_dialog (GimpDrawable *drawable)
