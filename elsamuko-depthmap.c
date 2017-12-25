@@ -22,7 +22,7 @@
 #include <cv.h>
 #include <cxcore.h>
 #include <highgui.h>
-#include <legacy/legacy.hpp>
+#include <opencv2/legacy/legacy.hpp>
 
 // #include <sys/types.h>
 // #include <sys/stat.h>
