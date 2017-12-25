@@ -113,7 +113,7 @@ static DepthmapParams depthmap_params = {
 };
 
 /* Setting PLUG_IN_INFO */
-const GimpPlugInInfo PLUG_IN_INFO =
+static const GimpPlugInInfo PLUG_IN_INFO =
 {
     NULL,  /* init_proc  */
     NULL,  /* quit_proc  */
@@ -161,12 +161,11 @@ run (const gchar      *name,
     static GimpParam   values[1];
     GimpPDBStatusType  status = GIMP_PDB_SUCCESS;
     GimpDrawable      *drawable;
-    GimpRunMode        run_mode;
 #ifdef TIMER
     GTimer            *timer = g_timer_new ();
 #endif
 
-    run_mode = param[0].data.d_int32;
+    const GimpRunMode run_mode = param[0].data.d_int32;
 
     *return_vals  = values;
     *nreturn_vals = 1;
@@ -257,12 +256,10 @@ depthmap (GimpDrawable *drawable,
           gint          change)
 {
     GimpPixelRgn destPR;
-    gint32       image;
     gint         x1, y1, x2, y2;
-    int          width, height;
     int          num_of_layers;
 
-    image = gimp_drawable_get_image (drawable->drawable_id);
+    const gint32 image = gimp_drawable_get_image (drawable->drawable_id);
     printf( "L%i: Render: Image ID: %i\n", __LINE__, image );
         
     gint *layers = gimp_image_get_layers( image, &num_of_layers );
@@ -277,8 +274,8 @@ depthmap (GimpDrawable *drawable,
 
     /* Get the input */
     gimp_drawable_mask_bounds (drawable->drawable_id, &x1, &y1, &x2, &y2);
-    width = x2-x1;
-    height = y2-y1;
+    const int width = x2-x1;
+    const int height = y2-y1;
 
     depthmap_region (&destPR,
                      iters, parallax,
@@ -312,9 +309,6 @@ depthmap_region (GimpPixelRgn *prDepth,
 {
     printf( "L%i: **** Begin of depthmap ****\n", __LINE__);
     gint        num_of_layers;
-    gint        i=0; //row
-    gint        j=0; //column
-    gint        value;
 
     //define layers
     gint *layers = gimp_image_get_layers( image, &num_of_layers );
@@ -379,25 +373,25 @@ depthmap_region (GimpPixelRgn *prDepth,
     // B/W
     if (channels == 2) {
         printf( "L%i: B/W: Get image values\n", __LINE__);
-        for (i = 0; i < height; i++) { //rows
-            for (j = 0; j < width; j++) { //columns
-                ((uchar *)( cvImgLeft->imageData + i* cvImgLeft->widthStep))[j] =  (gint)rectLeft[coord(i,j,0,channels,width)];
-                ((uchar *)(cvImgRight->imageData + i*cvImgRight->widthStep))[j] = (gint)rectRight[coord(i,j,0,channels,width)];
+        for (gint row = 0; row < height; row++) {
+            for (gint column = 0; column < width; column++) {
+                ((uchar *)( cvImgLeft->imageData + row* cvImgLeft->widthStep))[column] =  (gint)rectLeft[coord(row,column,0,channels,width)];
+                ((uchar *)(cvImgRight->imageData + row*cvImgRight->widthStep))[column] = (gint)rectRight[coord(row,column,0,channels,width)];
             }
         }
 
     // Color
     } else {
         printf( "L%i: Color: Get image values\n", __LINE__);
-        for (i = 0; i < height; i++) { //rows
-            for (j = 0; j < width; j++) { //columns
+        for (gint row = 0; row < height; row++) {
+            for (gint column = 0; column < width; column++) {
                 //Luminance: 0.2126R + 0.7152G + 0.0722B
-                ((uchar *)( cvImgLeft->imageData + i* cvImgLeft->widthStep))[j] = 0.2126*(gint)rectLeft[coord(i,j,0,channels,width)] +
-                                                                                  0.7152*(gint)rectLeft[coord(i,j,1,channels,width)] +
-                                                                                  0.0722*(gint)rectLeft[coord(i,j,2,channels,width)];
-                ((uchar *)(cvImgRight->imageData + i*cvImgRight->widthStep))[j] = 0.2126*(gint)rectRight[coord(i,j,0,channels,width)] +
-                                                                                  0.7152*(gint)rectRight[coord(i,j,1,channels,width)] +
-                                                                                  0.0722*(gint)rectRight[coord(i,j,2,channels,width)];
+                ((uchar *)( cvImgLeft->imageData + row* cvImgLeft->widthStep))[column] = 0.2126*(gint)rectLeft[coord(row,column,0,channels,width)] +
+                                                                                  0.7152*(gint)rectLeft[coord(row,column,1,channels,width)] +
+                                                                                  0.0722*(gint)rectLeft[coord(row,column,2,channels,width)];
+                ((uchar *)(cvImgRight->imageData + row*cvImgRight->widthStep))[column] = 0.2126*(gint)rectRight[coord(row,column,0,channels,width)] +
+                                                                                  0.7152*(gint)rectRight[coord(row,column,1,channels,width)] +
+                                                                                  0.0722*(gint)rectRight[coord(row,column,2,channels,width)];
             }
         }
     }
@@ -420,23 +414,23 @@ depthmap_region (GimpPixelRgn *prDepth,
     // B/W
     if (channels == 2) {
         printf( "L%i: B/W: Set depth values\n", __LINE__);        
-        for (i = 0; i < height; i++) { //rows
-            for (j = 0; j < width; j++) { //columns
-                rectDepth[coord(i,j,0,channels,width)] = ((uchar*)(cvMatDepth->data.ptr + cvMatDepth->step*i))[j];
-                rectDepth[coord(i,j,1,channels,width)] = 255;
+        for (gint row = 0; row < height; row++) {
+            for (gint column = 0; column < width; column++) {
+                rectDepth[coord(row,column,0,channels,width)] = ((uchar*)(cvMatDepth->data.ptr + cvMatDepth->step*row))[column];
+                rectDepth[coord(row,column,1,channels,width)] = 255;
             }
         }
 
     // Color
     } else {
         printf( "L%i: Color: Set depth values\n", __LINE__);
-        for (i = 0; i < height; i++) { //rows
-            for (j = 0; j < width; j++) { //columns
-                value = ((uchar*)(cvMatDepth->data.ptr + cvMatDepth->step*i))[j];
-                rectDepth[coord(i,j,0,channels,width)] = value;
-                rectDepth[coord(i,j,1,channels,width)] = value;
-                rectDepth[coord(i,j,2,channels,width)] = value;
-                rectDepth[coord(i,j,3,channels,width)] = 255;
+        for (gint row = 0; row < height; row++) {
+            for (gint column = 0; column < width; column++) {
+                const gint value = ((uchar*)(cvMatDepth->data.ptr + cvMatDepth->step*row))[column];
+                rectDepth[coord(row,column,0,channels,width)] = value;
+                rectDepth[coord(row,column,1,channels,width)] = value;
+                rectDepth[coord(row,column,2,channels,width)] = value;
+                rectDepth[coord(row,column,3,channels,width)] = 255;
             }
         }
     }
@@ -472,7 +466,7 @@ calcDepthmap(IplImage* cvImgLeft,
              int side,
              int change) {
    
-    CvSize size = cvGetSize(cvImgLeft);
+    const CvSize size = cvGetSize(cvImgLeft);
     CvMat* disparityLeft = cvCreateMat( size.height, size.width, CV_8S );
     CvMat* disparityRight = cvCreateMat( size.height, size.width, CV_8S );
     CvStereoGCState* state = cvCreateStereoGCState( parallax, iters );
@@ -491,7 +485,6 @@ calcDepthmap(IplImage* cvImgLeft,
     }
     cvReleaseMat(&disparityRight);
     cvReleaseMat(&disparityLeft);
-    
 }
 
 // debug function to write out the OpenCV matrix as Octave matrix
@@ -499,57 +492,42 @@ static gint
 write_matrix(CvMat*  cvMatDepth,
              char   *filename)
 {
-    gint i,j,k,height, width;
-    FILE *file;
-    gint error = FALSE;
-    height = cvMatDepth->rows;
-    width  = cvMatDepth->cols;
-
-    file = fopen( filename, "w" );
+    FILE* const file = fopen( filename, "w" );
     if ( file != NULL )
     {
-        // # Created by elsamuko-depthmap
-        // # name: depthmap
-        // # type: matrix
-        // # ndims: 3
-        fputs ("# Created by elsamuko-depthmap\n", file);
-        fputs ("# name:  depthmap\n", file);
-        fputs ("# type:  matrix\n", file);
-        fprintf ( file, "# ndims: %i\n", 3);
-        fprintf ( file, "%i %i %i\n", height, width, 1);
-        for ( j = 0; j < width; j++ ) {
-            for ( i = 0; i < height; i++ ) {
-                fprintf ( file, "%i\n", (int)((uchar*)(cvMatDepth->data.ptr + cvMatDepth->step*i))[j]);
-            }
-        }
-        fclose (file);
-    } else {
         gimp_message("Error: Could not open input matrix.");
         printf( "L%i: Error: Could not open input matrix.\n", __LINE__);
-        error = TRUE;
+        return TRUE; // error
     }
 
-    return error; //zero, if there is no problem
+    const gint height = cvMatDepth->rows;
+    const gint width  = cvMatDepth->cols;
+
+    // # Created by elsamuko-depthmap
+    // # name: depthmap
+    // # type: matrix
+    // # ndims: 3
+    fputs ("# Created by elsamuko-depthmap\n", file);
+    fputs ("# name:  depthmap\n", file);
+    fputs ("# type:  matrix\n", file);
+    fprintf ( file, "# ndims: %i\n", 3);
+    fprintf ( file, "%i %i %i\n", height, width, 1);
+    for ( gint j = 0; j < width; j++ ) {
+        for ( gint i = 0; i < height; i++ ) {
+            fprintf ( file, "%i\n", (int)((uchar*)(cvMatDepth->data.ptr + cvMatDepth->step*i))[j]);
+        }
+    }
+    fclose (file);
+
+    return FALSE; //no error
 };
 
 static gboolean
 depthmap_dialog (GimpDrawable *drawable)
 {
-    GtkWidget *dialog;
-    GtkWidget *main_vbox;
-    GtkWidget *preview;
-    GtkWidget *table;
-    GtkObject *adj;
-    GtkWidget *frame;
-    GtkWidget *frame2;
-    GtkWidget *hbox;
-    GtkWidget *button;
-    GtkWidget *button2;
-    gboolean   run;
-
     gimp_ui_init (PLUG_IN_BINARY, TRUE);
 
-    dialog = gimp_dialog_new (_("Depthmap"), PLUG_IN_BINARY,
+    GtkWidget* const dialog = gimp_dialog_new (_("Depthmap"), PLUG_IN_BINARY,
                               NULL, 0,
                               gimp_standard_help_func, PLUG_IN_PROC,
 
@@ -565,13 +543,13 @@ depthmap_dialog (GimpDrawable *drawable)
 
     gimp_window_set_transient (GTK_WINDOW (dialog));
 
-    main_vbox = gtk_vbox_new (FALSE, 12);
+    GtkWidget* const main_vbox = gtk_vbox_new (FALSE, 12);
     gtk_container_set_border_width (GTK_CONTAINER (main_vbox), 12);
     gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (dialog))),
                        main_vbox);
     gtk_widget_show (main_vbox);
 
-    preview = gimp_drawable_preview_new (drawable, NULL);
+    GtkWidget* const preview = gimp_drawable_preview_new (drawable, NULL);
     gtk_box_pack_start (GTK_BOX (main_vbox), preview, TRUE, TRUE, 0);
     gtk_widget_show (preview);
 
@@ -579,72 +557,80 @@ depthmap_dialog (GimpDrawable *drawable)
                       G_CALLBACK (preview_update),
                       NULL);
                       
-    table = gtk_table_new (3, 3, FALSE);
+    GtkWidget* const table = gtk_table_new (3, 3, FALSE);
     gtk_table_set_col_spacings (GTK_TABLE (table), 6);
     gtk_table_set_row_spacings (GTK_TABLE (table), 6);
     gtk_box_pack_start (GTK_BOX (main_vbox), table, FALSE, FALSE, 0);
     gtk_widget_show (table);
 
-    adj = gimp_scale_entry_new (GTK_TABLE (table), 0, 0,
-                                _("_Iterations:"), SCALE_WIDTH, ENTRY_WIDTH,
-                                depthmap_params.iters, 1, 8, 1, 2, 0,
-                                TRUE, 0, 0,
-                                NULL, NULL);
+    {
+        GtkObject* const adj = gimp_scale_entry_new (GTK_TABLE (table), 0, 0,
+                                    _("_Iterations:"), SCALE_WIDTH, ENTRY_WIDTH,
+                                    depthmap_params.iters, 1, 8, 1, 2, 0,
+                                    TRUE, 0, 0,
+                                    NULL, NULL);
 
-    g_signal_connect (adj, "value-changed",
-                      G_CALLBACK (gimp_int_adjustment_update),
-                      &depthmap_params.iters);
-    g_signal_connect_swapped (adj, "value-changed",
-                              G_CALLBACK (gimp_preview_invalidate),
-                              preview);
+        g_signal_connect (adj, "value-changed",
+                          G_CALLBACK (gimp_int_adjustment_update),
+                          &depthmap_params.iters);
+        g_signal_connect_swapped (adj, "value-changed",
+                                  G_CALLBACK (gimp_preview_invalidate),
+                                  preview);
+    }
+    {
+        GtkObject* const adj = gimp_scale_entry_new (GTK_TABLE (table), 0, 1,
+                                    _("_Parallax:"), SCALE_WIDTH, ENTRY_WIDTH,
+                                    depthmap_params.parallax, 1.0, 32.0, 1, 2, 0,
+                                    TRUE, 0, 0,
+                                    NULL, NULL);
 
-    adj = gimp_scale_entry_new (GTK_TABLE (table), 0, 1,
-                                _("_Parallax:"), SCALE_WIDTH, ENTRY_WIDTH,
-                                depthmap_params.parallax, 1.0, 32.0, 1, 2, 0,
-                                TRUE, 0, 0,
-                                NULL, NULL);
+        g_signal_connect (adj, "value-changed",
+                          G_CALLBACK (gimp_int_adjustment_update),
+                          &depthmap_params.parallax);
+        g_signal_connect_swapped (adj, "value-changed",
+                                  G_CALLBACK (gimp_preview_invalidate),
+                                  preview);
+    }
 
-    g_signal_connect (adj, "value-changed",
-                      G_CALLBACK (gimp_int_adjustment_update),
-                      &depthmap_params.parallax);
-    g_signal_connect_swapped (adj, "value-changed",
-                              G_CALLBACK (gimp_preview_invalidate),
-                              preview);
-
-    hbox = gtk_hbox_new (FALSE, 12);
+    GtkWidget* const hbox = gtk_hbox_new (FALSE, 12);
     gtk_box_pack_start (GTK_BOX (main_vbox), hbox, FALSE, FALSE, 0);
     gtk_widget_show (hbox);
 
-    frame = gimp_int_radio_group_new (TRUE, _("Depthmap"),
-                                    G_CALLBACK (gimp_radio_button_update),
-                                    &depthmap_params.side, depthmap_params.side,
-                                    _("_Left"), 0, &button,
-                                    _("_Right"), 1,
-                                    NULL, NULL);
-                                    
-    g_signal_connect_swapped (button, "toggled",
-                            G_CALLBACK (gimp_preview_invalidate),
-                            preview);
-    gtk_box_pack_start (GTK_BOX (hbox), frame, FALSE, FALSE, 0);
-    gtk_widget_show (frame);
-
-    frame2 = gimp_int_radio_group_new (TRUE, _("Switch layers"),
-                                    G_CALLBACK (gimp_radio_button_update),
-                                    &depthmap_params.change, depthmap_params.change,
-                                    _("_False"), 0, &button2,
-                                    _("_True"), 1,
-                                    NULL, NULL);
-                                    
-    g_signal_connect_swapped (button2, "toggled",
-                            G_CALLBACK (gimp_preview_invalidate),
-                            preview);
-                            
-    gtk_box_pack_start (GTK_BOX (hbox), frame2, FALSE, FALSE, 0);
-    gtk_widget_show (frame2);
+    {
+        GtkWidget *button;
+        GtkWidget* const frame = gimp_int_radio_group_new (TRUE, _("Depthmap"),
+                                        G_CALLBACK (gimp_radio_button_update),
+                                        &depthmap_params.side, depthmap_params.side,
+                                        _("_Left"), 0, &button,
+                                        _("_Right"), 1,
+                                        NULL, NULL);
+                                        
+        g_signal_connect_swapped (button, "toggled",
+                                G_CALLBACK (gimp_preview_invalidate),
+                                preview);
+        gtk_box_pack_start (GTK_BOX (hbox), frame, FALSE, FALSE, 0);
+        gtk_widget_show (frame);
+    }
+    {
+        GtkWidget *button2;
+        GtkWidget* const frame2 = gimp_int_radio_group_new (TRUE, _("Switch layers"),
+                                        G_CALLBACK (gimp_radio_button_update),
+                                        &depthmap_params.change, depthmap_params.change,
+                                        _("_False"), 0, &button2,
+                                        _("_True"), 1,
+                                        NULL, NULL);
+                                        
+        g_signal_connect_swapped (button2, "toggled",
+                                G_CALLBACK (gimp_preview_invalidate),
+                                preview);
+                                
+        gtk_box_pack_start (GTK_BOX (hbox), frame2, FALSE, FALSE, 0);
+        gtk_widget_show (frame2);
+    }
 
     gtk_widget_show (dialog);
 
-    run = (gimp_dialog_run (GIMP_DIALOG (dialog)) == GTK_RESPONSE_OK);
+    const gboolean run = (gimp_dialog_run (GIMP_DIALOG (dialog)) == GTK_RESPONSE_OK);
 
     gtk_widget_destroy (dialog);
 
@@ -654,15 +640,13 @@ depthmap_dialog (GimpDrawable *drawable)
 static void
 preview_update (GimpPreview *preview)
 {
-    GimpDrawable *drawable;
-    gint32        image;
     GimpPixelRgn  destPR;
     gint          x, y;
     gint          width, height;
 
-    drawable = gimp_drawable_preview_get_drawable (GIMP_DRAWABLE_PREVIEW (preview));
+    GimpDrawable* const drawable = gimp_drawable_preview_get_drawable (GIMP_DRAWABLE_PREVIEW (preview));
 
-    image = gimp_drawable_get_image (drawable->drawable_id);
+    const gint32 image = gimp_drawable_get_image (drawable->drawable_id);
     printf( "L%i: Preview: Image ID: %i\n", __LINE__, image );    
 
     gimp_pixel_rgn_init (&destPR, drawable, 0, 0, drawable->width, drawable->height, TRUE, TRUE);
